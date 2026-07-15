@@ -85,6 +85,7 @@ LAUNCHER_DIR="$PREFIX/drive_c/Program Files/Ascension Launcher"
 LAUNCHER="$LAUNCHER_DIR/Ascension Launcher.exe"
 GAME="$LAUNCHER_DIR/resources/ascension-live/Ascension.exe"
 STATE="$PREFIX/.ascension-macos-fix/install.json"
+APP="$HOME/Applications/Project Ascension.app"
 
 if [[ $DRY_RUN -eq 1 ]]; then
     printf 'Heroic app: %s\n' "$(find /Applications "$HOME/Applications" -maxdepth 1 -name Heroic.app -print 2>/dev/null | head -n 1 || true)"
@@ -94,6 +95,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
     printf 'Launcher: %s\n' "$([[ -f "$LAUNCHER" ]] && echo present || echo missing)"
     printf 'Game: %s\n' "$([[ -f "$GAME" ]] && echo present || echo missing)"
     printf 'Compatibility fix: %s\n' "$([[ -f "$STATE" ]] && echo installed || echo missing)"
+    printf 'Spotlight application: %s\n' "$([[ -d "$APP" ]] && echo registered || echo missing)"
     exit 0
 fi
 
@@ -235,6 +237,54 @@ ensure_prefix() {
     WINEPREFIX="$PREFIX" "$RUNNER_DIR/bin/wineserver" -k >/dev/null 2>&1 || true
 }
 
+configure_launcher_graphics() {
+    log "Configuring the Ascension Launcher graphics fallback"
+    python3 - "$PREFIX" <<'PY'
+import json
+import os
+from pathlib import Path
+import sys
+
+prefix = Path(sys.argv[1])
+users_dir = prefix / "drive_c" / "users"
+preferred_user = users_dir / "crossover"
+
+if preferred_user.is_dir():
+    wine_user = preferred_user
+else:
+    candidates = [
+        path
+        for path in users_dir.iterdir()
+        if path.is_dir()
+        and path.name.lower() not in {"all users", "default", "default user", "public"}
+    ]
+    if len(candidates) != 1:
+        raise SystemExit(f"Could not identify the Wine user directory in {users_dir}")
+    wine_user = candidates[0]
+
+settings_path = (
+    wine_user
+    / "AppData"
+    / "Local"
+    / "ProjectAscension"
+    / "Config"
+    / "AscensionLauncherSettings.json"
+)
+settings_path.parent.mkdir(parents=True, exist_ok=True)
+
+settings = {}
+if settings_path.exists():
+    settings = json.loads(settings_path.read_text())
+    if not isinstance(settings, dict):
+        raise SystemExit(f"Unexpected launcher settings structure: {settings_path}")
+
+settings["enableHardwareAcceleration"] = False
+temporary = settings_path.with_suffix(".json.tmp")
+temporary.write_text(json.dumps(settings, indent=2) + "\n")
+os.replace(temporary, settings_path)
+PY
+}
+
 ensure_launcher() {
     [[ ! -f "$LAUNCHER" ]] || return
     log "Downloading the official Project Ascension installer"
@@ -264,6 +314,7 @@ ensure_python
 ensure_heroic
 ensure_runner
 ensure_prefix
+configure_launcher_graphics
 ensure_launcher
 ensure_game
 
@@ -278,7 +329,13 @@ else
     "$SCRIPT_DIR/install.sh" --reuse-runner --prefix "$PREFIX" --config "$CONFIG"
 fi
 
+APP_ID=$(basename "$CONFIG" .json)
+log "Adding Project Ascension to Applications and Spotlight"
+APP=$(python3 "$SCRIPT_DIR/scripts/register_macos_app.py" --app-id "$APP_ID")
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+[[ ! -x "$LSREGISTER" ]] || "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
+
 log "Installation complete"
 printf 'Project Ascension is ready in Heroic.\n'
 printf 'Prefix: %s\n' "$PREFIX"
-printf 'You can now open Heroic and press Play.\n'
+printf 'You can now open Heroic and press Play, or launch Project Ascension from Spotlight.\n'

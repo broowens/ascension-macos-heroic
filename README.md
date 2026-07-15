@@ -35,6 +35,8 @@ The bootstrapper checks each stage and installs what is missing:
 - the custom WineCX/Rosetta x87 runner;
 - the official Ascension Launcher and game;
 - the Microsoft runtime fix and Heroic launch settings.
+- a native Project Ascension application in `~/Applications`, indexed by
+  Spotlight.
 
 Ascension's own setup and download windows are interactive. Follow those
 windows, wait for the game download to finish, and close the Ascension Launcher
@@ -83,7 +85,28 @@ For non-standard locations:
   --config "/path/to/heroic/GamesConfig/game-id.json"
 ```
 
-Open Heroic after installation and press Play.
+Open Heroic after installation and press Play, or launch Project Ascension from
+Spotlight.
+
+## Uninstall
+
+From a checkout, run:
+
+```bash
+./uninstall.sh
+```
+
+The uninstaller removes the Ascension Wine prefix, its Heroic library entry,
+game-specific Heroic configuration, the dedicated compatibility runner, the
+installer cache, and the Project Ascension application shortcut. It keeps
+Heroic, Homebrew, Python, and Heroic data for other games. To remove the Heroic
+application too, use `./uninstall.sh --remove-heroic`.
+
+Once the repository is public, the uninstaller can also be run directly:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/broowens/ascension-macos-heroic/main/uninstall.sh)"
+```
 
 ## Diagnostics and rollback
 
