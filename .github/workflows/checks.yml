@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check shell syntax
-        run: bash -n install.sh rollback.sh diagnose.sh scripts/build-release.sh
+        run: bash -n bootstrap.sh install.sh rollback.sh diagnose.sh scripts/build-release.sh
       - name: Check Python syntax
         run: python3 -m py_compile scripts/*.py
       - name: Ensure no forbidden binaries are tracked

@@ -13,17 +13,55 @@ The installer adds the tested WineCX 26/Rosetta x87 runner, installs matching
 x86 and x64 Microsoft VC++ runtime files from Ascension's own cached
 redistributable, and updates only Ascension's Heroic settings.
 
+## One-command install
+
+Clone the repository and run the installer with one command:
+
+```bash
+git clone https://github.com/broowens/ascension-macos-heroic.git && cd ascension-macos-heroic && ./bootstrap.sh
+```
+
+Once this repository is public, an Apple Silicon Mac can install everything by
+opening Terminal and running:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/broowens/ascension-macos-heroic/main/bootstrap.sh)"
+```
+
+The bootstrapper checks each stage and installs what is missing:
+
+- Python 3 (and Homebrew first, if needed);
+- the latest Apple Silicon release of Heroic;
+- the custom WineCX/Rosetta x87 runner;
+- the official Ascension Launcher and game;
+- the Microsoft runtime fix and Heroic launch settings.
+
+Ascension's own setup and download windows are interactive. Follow those
+windows, wait for the game download to finish, and close the Ascension Launcher
+when prompted. If it is closed early or a download is interrupted, run the same
+command again; completed stages are detected and skipped.
+
+To inspect an existing checkout without changing anything:
+
+```bash
+./bootstrap.sh --dry-run
+```
+
+While the repository is private, clone it with an authenticated GitHub account
+and run `./bootstrap.sh`. Private release downloads use the authenticated `gh`
+command automatically when it is available.
+
 ## Requirements
 
 - An Apple Silicon Mac.
-- Heroic Games Launcher.
-- Project Ascension already installed through Heroic and launched once.
-- Python 3 (`brew install python` if `python3` is unavailable).
-- Heroic, Ascension Launcher, and the game must be closed during installation.
+- An internet connection and enough free space for Heroic and the game.
+- Administrator approval if Homebrew needs to be installed.
+- Heroic, Ascension Launcher, and the game closed before starting or resuming.
 
-## Install
+## Compatibility-fix-only install
 
-Download both files from the latest GitHub release:
+If Heroic and Ascension are already installed, the smaller compatibility-only
+installer remains available. Download both files from the latest GitHub release:
 
 - `ascension-macos-heroic-v1.0.0.tar.gz`
 - `ascension-winecx26-rosettax87-mingw-v1.0.0.tar.xz`
