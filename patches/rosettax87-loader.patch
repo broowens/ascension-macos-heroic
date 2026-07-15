@@ -1,0 +1,21 @@
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@
+ static void preloader_exec( char **argv, const char *image_path, WORD machine )
+ {
++    const char *rosetta_x87_path;
+@@
+-    execv( argv[1], argv + 1 );
++    rosetta_x87_path = getenv( "ROSETTA_X87_PATH" );
++    if (rosetta_x87_path && machine == IMAGE_FILE_MACHINE_I386)
++    {
++        argv[0] = strdup( rosetta_x87_path );
++        execv( argv[0], argv );
++    }
++    else execv( argv[1], argv + 1 );
+ }
+@@
+-    if ((argv[1] = get_alternate_wineloader( machine )))
++    if (!getenv( "ROSETTA_X87_PATH" ) &&
++        ((argv[1] = get_alternate_wineloader( machine ))))
+         preloader_exec( argv, image_path, machine );
