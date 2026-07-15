@@ -6,15 +6,17 @@ RUNNER_NAME="WineCX26-RosettaX87-Mingw"
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 HEROIC_ROOT="${HEROIC_ROOT:-$HOME/Games/Heroic}"
 RUNNER_ARCHIVE=""
+REUSE_RUNNER=0
 PREFIX=""
 CONFIG=""
 
 usage() {
     cat <<'EOF'
-Usage: ./install.sh --runner-archive PATH [--prefix PATH] [--config PATH]
+Usage: ./install.sh (--runner-archive PATH | --reuse-runner) [--prefix PATH] [--config PATH]
 
 Options:
   --runner-archive PATH  Required prebuilt runner release archive.
+  --reuse-runner         Use an already-installed compatibility runner.
   --prefix PATH          Ascension Wine prefix; auto-detected when omitted.
   --config PATH          Heroic GamesConfig JSON; auto-detected when omitted.
   --help                 Show this help.
@@ -33,6 +35,7 @@ log() {
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --runner-archive) [[ $# -ge 2 ]] || die "Missing value for $1"; RUNNER_ARCHIVE=$2; shift 2 ;;
+        --reuse-runner) REUSE_RUNNER=1; shift ;;
         --prefix) [[ $# -ge 2 ]] || die "Missing value for $1"; PREFIX=$2; shift 2 ;;
         --config) [[ $# -ge 2 ]] || die "Missing value for $1"; CONFIG=$2; shift 2 ;;
         --help|-h) usage; exit 0 ;;
@@ -44,8 +47,12 @@ done
 [[ $(uname -m) == arm64 ]] || die "This package supports Apple Silicon only."
 PYTHON=$(command -v python3 || true)
 [[ -n "$PYTHON" ]] || die "Python 3 is required. Install it with: brew install python"
-[[ -n "$RUNNER_ARCHIVE" ]] || die "--runner-archive is required."
-[[ -f "$RUNNER_ARCHIVE" ]] || die "Runner archive not found: $RUNNER_ARCHIVE"
+if [[ $REUSE_RUNNER -eq 1 ]]; then
+    [[ -z "$RUNNER_ARCHIVE" ]] || die "Use either --runner-archive or --reuse-runner, not both."
+else
+    [[ -n "$RUNNER_ARCHIVE" ]] || die "--runner-archive or --reuse-runner is required."
+    [[ -f "$RUNNER_ARCHIVE" ]] || die "Runner archive not found: $RUNNER_ARCHIVE"
+fi
 
 if pgrep -f '/Heroic.app/Contents/MacOS/Heroic|Ascension Launcher\.exe|ascension-live.*Ascension\.exe|MMgr64\.exe' >/dev/null 2>&1; then
     die "Close Heroic, Ascension Launcher, and Ascension before installing."
@@ -83,15 +90,19 @@ BACKUP_DIR="$STATE_DIR/backups/$STAMP"
 mkdir -p "$RUNNERS_DIR" "$BACKUP_DIR/system32" "$BACKUP_DIR/syswow64"
 
 RUNNER_BACKUP=""
-if [[ -e "$RUNNER_DIR" ]]; then
-    RUNNER_BACKUP="$RUNNER_DIR.backup-$STAMP"
-    log "Backing up existing custom runner"
-    mv "$RUNNER_DIR" "$RUNNER_BACKUP"
-fi
+if [[ $REUSE_RUNNER -eq 0 ]]; then
+    if [[ -e "$RUNNER_DIR" ]]; then
+        RUNNER_BACKUP="$RUNNER_DIR.backup-$STAMP"
+        log "Backing up existing custom runner"
+        mv "$RUNNER_DIR" "$RUNNER_BACKUP"
+    fi
 
-log "Installing custom runner"
-/usr/bin/tar -xf "$RUNNER_ARCHIVE" -C "$RUNNERS_DIR"
-[[ -x "$RUNNER_DIR/bin/wine-heroic" ]] || die "Runner archive has an unexpected layout."
+    log "Installing custom runner"
+    /usr/bin/tar -xf "$RUNNER_ARCHIVE" -C "$RUNNERS_DIR"
+else
+    log "Using installed custom runner"
+fi
+[[ -x "$RUNNER_DIR/bin/wine-heroic" ]] || die "Custom runner has an unexpected layout."
 chmod +x "$RUNNER_DIR/bin/wine" "$RUNNER_DIR/bin/wine-heroic" \
     "$RUNNER_DIR/bin/wineserver" "$RUNNER_DIR/support/ascension-runtime/rosettax87"
 
