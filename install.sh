@@ -174,8 +174,14 @@ WINEPREFIX="$PREFIX" "$RUNNER_DIR/bin/wineserver" -k >/dev/null 2>&1 || true
     --runner-backup "$RUNNER_BACKUP" --runtime-backup "$BACKUP_DIR" \
     --config "$CONFIG" --config-backup "$CONFIG_BACKUP" --vc-version "$VC_VERSION"
 
+log "Adding Project Ascension to Applications and Spotlight"
+APP_ID=$(basename "$CONFIG" .json)
+APP=$("$PYTHON" "$SCRIPT_DIR/scripts/register_macos_app.py" --app-id "$APP_ID")
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+[[ ! -x "$LSREGISTER" ]] || "$LSREGISTER" -f "$APP" >/dev/null 2>&1 || true
+
 printf '\nInstalled successfully.\n'
 printf 'Prefix: %s\n' "$PREFIX"
 printf 'Runner: %s\n' "$RUNNER_DIR"
 printf 'VC++ runtime: %s\n' "$VC_VERSION"
-printf 'Open Heroic and press Play.\n'
+printf 'Open Heroic and press Play, or launch Project Ascension from Spotlight.\n'
