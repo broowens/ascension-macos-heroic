@@ -38,7 +38,8 @@ the official Ascension Launcher download and update the game normally.
 The DMG contains the official launcher installer and compatibility runtime, but
 does not contain the game, account details, or saved credentials. The first
 launch needs an internet connection and may take longer while the runtime and
-Microsoft components are prepared.
+Microsoft components are prepared. A native progress window shows the current
+setup stage while those first-launch tasks run.
 
 ### macOS signing warning
 

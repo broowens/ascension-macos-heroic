@@ -5,7 +5,7 @@ APP_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 RESOURCES="$APP_ROOT/Resources"
 BUNDLED_RUNNER="$RESOURCES/WineCX26-RosettaX87-Mingw"
 RUNNER="/Users/Shared/PAWine"
-RUNTIME_MARKER="2026-07-16-broker-lock3"
+RUNTIME_MARKER="2026-07-16-prefix-modules1"
 WINE="$RUNNER/bin/wine-heroic"
 WINESERVER="$RUNNER/bin/wineserver"
 ROSETTA_LOADER="$RUNNER/support/ascension-runtime/rosettax87"
@@ -14,6 +14,7 @@ PATCH_ASSETS="$RESOURCES/runtime-patch"
 WINDOW_CONTROLS="$RESOURCES/ascension-window-controls.exe"
 WINDOW_HOOK="$RESOURCES/ascension-window-hook.dll"
 SETTINGS_HELPER="$RESOURCES/ascension-settings"
+PROGRESS_HELPER="$RESOURCES/ascension-progress"
 MENU_LIBRARY="$RESOURCES/libascension-menu.dylib"
 SUPPORT="$HOME/Library/Application Support/Project Ascension"
 PREFIX="$SUPPORT/prefix"
@@ -27,6 +28,9 @@ LOG="$LOG_DIR/launcher.log"
 LOCK="$SUPPORT/.launching"
 PATCH_MANAGER_PID=""
 WINDOW_CONTROLS_PID=""
+PROGRESS_PID=""
+PROGRESS_PIPE=""
+PROGRESS_OPEN=0
 
 mkdir -p "$SUPPORT" "$LOG_DIR"
 
@@ -56,14 +60,43 @@ fi
     fail "The bundled macOS game compatibility files are missing. Reinstall Project Ascension from the DMG."
 [[ -f "$WINDOW_CONTROLS" && -f "$WINDOW_HOOK" ]] || \
     fail "The bundled window controls helper is missing. Reinstall Project Ascension from the DMG."
-[[ -x "$SETTINGS_HELPER" && -f "$MENU_LIBRARY" ]] || \
-    fail "The bundled macOS settings helper is missing. Reinstall Project Ascension from the DMG."
+[[ -x "$SETTINGS_HELPER" && -x "$PROGRESS_HELPER" && -f "$MENU_LIBRARY" ]] || \
+    fail "A bundled macOS helper is missing. Reinstall Project Ascension from the DMG."
+
+progress_start() {
+    PROGRESS_PIPE="$SUPPORT/.setup-progress.$$"
+    rm -f "$PROGRESS_PIPE"
+    mkfifo "$PROGRESS_PIPE"
+    "$PROGRESS_HELPER" "$PROGRESS_PIPE" &
+    PROGRESS_PID=$!
+    exec 9>"$PROGRESS_PIPE"
+    PROGRESS_OPEN=1
+}
+
+progress_update() {
+    [[ $PROGRESS_OPEN -eq 1 ]] || return 0
+    printf '%s\t%s\n' "$1" "$2" >&9 2>/dev/null || true
+}
+
+progress_stop() {
+    if [[ $PROGRESS_OPEN -eq 1 ]]; then
+        exec 9>&-
+        PROGRESS_OPEN=0
+    fi
+    if [[ -n "$PROGRESS_PID" ]]; then
+        kill "$PROGRESS_PID" 2>/dev/null || true
+        wait "$PROGRESS_PID" 2>/dev/null || true
+        PROGRESS_PID=""
+    fi
+    [[ -z "$PROGRESS_PIPE" ]] || rm -f "$PROGRESS_PIPE"
+}
 
 if ! mkdir "$LOCK" 2>/dev/null; then
     fail "Project Ascension is already starting. If it is not visible, wait a moment and try again."
 fi
 
 cleanup() {
+    progress_stop
     if [[ -n "$WINDOW_CONTROLS_PID" ]]; then
         kill "$WINDOW_CONTROLS_PID" 2>/dev/null || true
         wait "$WINDOW_CONTROLS_PID" 2>/dev/null || true
@@ -78,7 +111,9 @@ trap cleanup EXIT
 
 ensure_runtime() {
     local marker="$RUNNER/.ascension-runtime-version"
-    if [[ -f "$marker" && $(cat "$marker") == "$RUNTIME_MARKER" ]]; then
+    if [[ -f "$marker" && $(cat "$marker") == "$RUNTIME_MARKER" \
+        && -f "$RUNNER/lib/wine/x86_64-windows/msxml3.dll" \
+        && -f "$RUNNER/lib/wine/i386-windows/msxml3.dll" ]]; then
         return
     fi
 
@@ -104,8 +139,25 @@ apply_pending_maintenance() {
     fi
 }
 
+FIRST_SETUP=0
+if [[ ! -f "$SUPPORT/.prefix-ready" || ! -f "$LAUNCHER" \
+    || ! -f "$PREFIX/drive_c/windows/system32/msvcp140.dll" \
+    || ! -f "$PREFIX/drive_c/windows/syswow64/msvcp140.dll" ]]; then
+    FIRST_SETUP=1
+fi
+
+if [[ $FIRST_SETUP -eq 1 ]]; then
+    /usr/bin/osascript <<'APPLESCRIPT' >/dev/null 2>&1 || true
+display dialog "Project Ascension will now prepare its Windows compatibility environment. A progress window will show each setup stage." buttons {"Continue"} default button "Continue" with title "Project Ascension"
+APPLESCRIPT
+    progress_start
+    progress_update 5 "Starting first-time setup…"
+fi
+
+progress_update 10 "Installing the compatibility runtime…"
 apply_pending_maintenance
 ensure_runtime
+progress_update 20 "Compatibility runtime installed."
 
 [[ -x "$WINE" && -x "$WINESERVER" && -x "$ROSETTA_LOADER" ]] || \
     fail "The installed compatibility runtime is incomplete."
@@ -323,11 +375,43 @@ ensure_prefix() {
     local syswow64="$PREFIX/drive_c/windows/syswow64"
     local source target
     mkdir -p "$system32" "$syswow64" "$PREFIX/dosdevices"
+    [[ -e "$PREFIX/dosdevices/c:" || -L "$PREFIX/dosdevices/c:" ]] || \
+        ln -s ../drive_c "$PREFIX/dosdevices/c:"
+    [[ -e "$PREFIX/dosdevices/z:" || -L "$PREFIX/dosdevices/z:" ]] || \
+        ln -s / "$PREFIX/dosdevices/z:"
+
+    if [[ ! -f "$SUPPORT/.prefix-ready" ]]; then
+        local boot_pid prefix_ready=0
+        installer_env "$WINE" "$RUNNER/lib/wine/x86_64-windows/wineboot.exe" -u &
+        boot_pid=$!
+        for _ in {1..120}; do
+            if [[ -d "$PREFIX/drive_c/users" && -f "$PREFIX/user.reg" ]]; then
+                prefix_ready=1
+                break
+            fi
+            sleep 1
+        done
+        if [[ -d "$PREFIX/drive_c/users" && -f "$PREFIX/user.reg" ]]; then
+            prefix_ready=1
+        fi
+        if [[ $prefix_ready -eq 1 ]]; then
+            # WineCX can wait indefinitely for its first-run desktop helper
+            # after wine.inf has finished. The prefix is ready at this point;
+            # stop the helper so installation can continue.
+            WINEPREFIX="$PREFIX" "$WINESERVER" -k >/dev/null 2>&1 || true
+            wait "$boot_pid" 2>/dev/null || true
+        else
+            WINEPREFIX="$PREFIX" "$WINESERVER" -k >/dev/null 2>&1 || true
+            wait "$boot_pid" 2>/dev/null || true
+            fail "The Windows compatibility environment could not be initialized."
+        fi
+        touch "$SUPPORT/.prefix-ready"
+    fi
 
     # This PE build keeps Wine's Windows modules in the runtime rather than
     # copying hundreds of megabytes into each prefix. Link missing built-ins
-    # into the standard Windows directories while preserving DLLs later
-    # replaced by the Microsoft VC++ runtime.
+    # only after wineboot has finished: its prefix cleanup can otherwise
+    # remove the shared runtime files through these links.
     for source in "$RUNNER/lib/wine/x86_64-windows"/*; do
         target="$system32/$(basename "$source")"
         [[ -e "$target" || -L "$target" ]] || ln -s "$source" "$target"
@@ -336,35 +420,6 @@ ensure_prefix() {
         target="$syswow64/$(basename "$source")"
         [[ -e "$target" || -L "$target" ]] || ln -s "$source" "$target"
     done
-    [[ -e "$PREFIX/dosdevices/c:" || -L "$PREFIX/dosdevices/c:" ]] || \
-        ln -s ../drive_c "$PREFIX/dosdevices/c:"
-    [[ -e "$PREFIX/dosdevices/z:" || -L "$PREFIX/dosdevices/z:" ]] || \
-        ln -s / "$PREFIX/dosdevices/z:"
-
-    if [[ ! -f "$SUPPORT/.prefix-ready" ]]; then
-        local boot_pid boot_finished=0
-        wine_env "$WINE" "$RUNNER/lib/wine/x86_64-windows/wineboot.exe" -u &
-        boot_pid=$!
-        for _ in {1..30}; do
-            if ! kill -0 "$boot_pid" 2>/dev/null; then
-                boot_finished=1
-                break
-            fi
-            sleep 1
-        done
-        if [[ $boot_finished -eq 1 ]]; then
-            wait "$boot_pid" || fail "The Windows compatibility environment could not be initialized."
-        else
-            # WineCX can wait indefinitely for its first-run desktop helper
-            # after wine.inf has finished. The prefix is ready at this point;
-            # stop the helper so installation can continue.
-            WINEPREFIX="$PREFIX" "$WINESERVER" -k >/dev/null 2>&1 || true
-            wait "$boot_pid" 2>/dev/null || true
-        fi
-        [[ -d "$PREFIX/drive_c/users" && -f "$PREFIX/user.reg" ]] || \
-            fail "The Windows compatibility environment was not created correctly."
-        touch "$SUPPORT/.prefix-ready"
-    fi
 }
 
 configure_launcher() {
@@ -421,7 +476,7 @@ install_vc_runtime() {
     for arch in x86_64 i386; do
         for dll in msxml3.dll msxml6.dll; do
             installer_env "$WINE" "$RUNNER/lib/wine/$arch-windows/regsvr32.exe" /s \
-                "$RUNNER/lib/wine/$arch-windows/$dll" || \
+                "$dll" || \
                 fail "The Windows installer support components could not be registered."
         done
     done
@@ -453,20 +508,17 @@ install_vc_runtime() {
 {
     printf '\n[%s] Starting Project Ascension\n' "$(date '+%Y-%m-%d %H:%M:%S')"
 
-    if [[ ! -f "$SUPPORT/.prefix-ready" ]]; then
-        /usr/bin/osascript <<'APPLESCRIPT' >/dev/null 2>&1 || true
-display dialog "Project Ascension will now prepare its Windows compatibility environment. This can take a minute on the first launch." buttons {"Continue"} default button "Continue" with title "Project Ascension"
-APPLESCRIPT
-    fi
-
+    progress_update 25 "Preparing the Windows environment…"
     ensure_prefix
+    progress_update 42 "Configuring launcher preferences…"
 
     reset_launcher_data_if_requested
     configure_launcher
 
     if [[ ! -f "$LAUNCHER" ]]; then
+        progress_update 50 "Complete the official Ascension Launcher setup window."
         printf 'Opening the bundled official launcher installer.\n'
-        wine_env "$WINE" "$INSTALLER"
+        installer_env "$WINE" "$INSTALLER"
         [[ -f "$LAUNCHER" ]] || fail "The Ascension Launcher was not installed. Open Project Ascension again to retry."
         # The NSIS installer can auto-start the launcher without our required
         # Electron flags. That hidden first instance then absorbs the supported
@@ -476,14 +528,18 @@ APPLESCRIPT
         WINEPREFIX="$PREFIX" "$WINESERVER" -k >/dev/null 2>&1 || true
         sleep 1
         configure_launcher
+        progress_update 65 "Ascension Launcher installed."
     fi
 
+    progress_update 70 "Installing Microsoft Windows components…"
     install_vc_runtime
+    progress_update 85 "Microsoft Windows components installed."
 
     # Present pristine managed files during the launcher's initial verification
     # so its UI remains on Play. The manager activates the macOS patch only
     # after that check reports up-to-date, then restores support files if the
     # launcher's zero-byte preflight repair removes them before game startup.
+    progress_update 90 "Preparing macOS game compatibility files…"
     prepare_clean_game
 
     # The Windows launcher disables SC_CLOSE, which Wine mirrors as a grey
@@ -501,6 +557,9 @@ APPLESCRIPT
     wine_env "$WINE" "$WINDOW_CONTROLS" "${window_control_args[@]}" &
     WINDOW_CONTROLS_PID=$!
 
+    progress_update 100 "Setup complete. Opening Ascension Launcher…"
+    /bin/sleep 0.4
+    progress_stop
     printf 'Opening Ascension Launcher.\n'
     launcher_env "$WINE" "$LAUNCHER" \
         --no-sandbox --disable-gpu-sandbox --disable-gpu --use-angle=swiftshader &

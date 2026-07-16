@@ -94,6 +94,10 @@ MACOS_CC=$(command -v clang)
     "$ROOT/packaging/macos/ascension-settings.m" \
     "$ROOT/packaging/macos/ascension-settings-app.m" \
     -o "$RESOURCES/ascension-settings"
+"$MACOS_CC" -fobjc-arc -Wall -Wextra -Os -arch arm64 \
+    -mmacosx-version-min=12.0 -framework AppKit \
+    "$ROOT/packaging/macos/ascension-progress.m" \
+    -o "$RESOURCES/ascension-progress"
 
 SETTINGS_APP="$RESOURCES/Ascension Settings.app"
 mkdir -p "$SETTINGS_APP/Contents/MacOS"
@@ -385,6 +389,7 @@ Compatibility runtime SHA-256: $(shasum -a 256 "$RUNNER_ARCHIVE" | awk '{print $
 Game data included: no
 Window close-control compatibility helper: included
 Native macOS settings and application menu: included
+Native first-launch setup progress: included
 Configurable DXVK performance overlay: included
 EOF
 
