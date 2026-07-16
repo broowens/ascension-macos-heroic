@@ -29,8 +29,8 @@ the official Ascension Launcher download and update the game normally.
 
 ## Install the macOS app (recommended)
 
-1. Download `Project-Ascension-for-Mac-v1.0.7.dmg` and its `.sha256` file from
-   the [latest release](https://github.com/broowens/ascension-macos-heroic/releases/latest).
+1. Download `Project-Ascension-for-Mac-v1.0.8.dmg` and its `.sha256` file from
+   the [latest release](https://github.com/broowens/ascension-macos/releases/latest).
 2. Open the DMG and drag **Project Ascension** to **Applications**.
 3. Open **Project Ascension**. The first launch creates its compatibility
    environment and opens the official Ascension installer. Complete the normal
@@ -49,7 +49,7 @@ current setup stage while those first-launch tasks run.
 
 ### macOS signing warning
 
-Version 1.0.7 is ad-hoc signed but is not yet Apple Developer ID signed or
+Version 1.0.8 is ad-hoc signed but is not yet Apple Developer ID signed or
 notarized. macOS Gatekeeper may therefore block its first launch even when the
 download is intact.
 
@@ -69,7 +69,7 @@ Only use that command for the DMG downloaded from this repository. To verify
 the download first, run this beside both downloaded files:
 
 ```bash
-shasum -a 256 -c Project-Ascension-for-Mac-v1.0.7.dmg.sha256
+shasum -a 256 -c Project-Ascension-for-Mac-v1.0.8.dmg.sha256
 ```
 
 ## App settings
@@ -137,14 +137,14 @@ game; or remove the app, runtime, and all Project Ascension data.
 Clone the repository and run the installer with one command:
 
 ```bash
-git clone https://github.com/broowens/ascension-macos-heroic.git && cd ascension-macos-heroic && ./bootstrap.sh
+git clone https://github.com/broowens/ascension-macos.git && cd ascension-macos && ./bootstrap.sh
 ```
 
-Once this repository is public, an Apple Silicon Mac can install everything by
-opening Terminal and running:
+An Apple Silicon Mac can also install everything by opening Terminal and
+running:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/broowens/ascension-macos-heroic/main/bootstrap.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/broowens/ascension-macos/main/bootstrap.sh)"
 ```
 
 The bootstrapper checks each stage and installs what is missing:
@@ -153,7 +153,7 @@ The bootstrapper checks each stage and installs what is missing:
 - the latest Apple Silicon release of Heroic;
 - the custom WineCX/Rosetta x87 runner;
 - the official Ascension Launcher and game;
-- the Microsoft runtime fix and Heroic launch settings.
+- the Microsoft runtime fix and Heroic launch settings;
 - a native Project Ascension application in `~/Applications`, indexed by
   Spotlight.
 
@@ -168,10 +168,6 @@ To inspect an existing checkout without changing anything:
 ./bootstrap.sh --dry-run
 ```
 
-While the repository is private, clone it with an authenticated GitHub account
-and run `./bootstrap.sh`. Private release downloads use the authenticated `gh`
-command automatically when it is available.
-
 ### Requirements
 
 - An Apple Silicon Mac.
@@ -182,7 +178,8 @@ command automatically when it is available.
 ### Compatibility-fix-only install
 
 If Heroic and Ascension are already installed, the smaller compatibility-only
-installer remains available. Download both files from the latest GitHub release:
+installer remains available. Download both files from the
+[v1.0.0 compatibility runtime release](https://github.com/broowens/ascension-macos/releases/tag/v1.0.0):
 
 - `ascension-macos-heroic-v1.0.0.tar.gz`
 - `ascension-winecx26-rosettax87-mingw-v1.0.0.tar.xz`
@@ -221,10 +218,10 @@ installer cache, and the Project Ascension application shortcut. It keeps
 Heroic, Homebrew, Python, and Heroic data for other games. To remove the Heroic
 application too, use `./uninstall.sh --remove-heroic`.
 
-Once the repository is public, the uninstaller can also be run directly:
+The public uninstaller can also be run directly:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/broowens/ascension-macos-heroic/main/uninstall.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/broowens/ascension-macos/main/uninstall.sh)"
 ```
 
 ### Diagnostics and rollback
@@ -246,18 +243,19 @@ pre-extracted Microsoft runtime DLLs. The standalone app downloads the launcher
 from Ascension and Microsoft's official redistributables when needed; the legacy
 Heroic installer can use the redistributable cached by Ascension.
 
-The custom runner is published as a separate release asset. Its corresponding
-CodeWeavers source archive and the Rosetta x87 loader patch should be attached
-to the same release; see [BUILDING.md](BUILDING.md) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The audited runtime contents
-and automated proprietary-component guard are documented in
-[OPEN_SOURCE_AUDIT.md](OPEN_SOURCE_AUDIT.md).
+The custom runner and its corresponding CodeWeavers source archive are published
+together on the
+[v1.0.0 compatibility runtime release](https://github.com/broowens/ascension-macos/releases/tag/v1.0.0).
+The Rosetta x87 loader patch is tracked in this repository; see
+[BUILDING.md](BUILDING.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The audited runtime contents and automated proprietary-component guard are
+documented in [OPEN_SOURCE_AUDIT.md](OPEN_SOURCE_AUDIT.md).
 
 ## Tested configuration
 
 - Apple M4 Pro
 - macOS 26.5.2
-- Project Ascension for Mac 1.0.6
+- Project Ascension for Mac 1.0.8
 - Heroic
 - WineCX 26-derived Wine 11.0 runner with Rosetta x87 loader
 - Microsoft Visual C++ runtime 14.50.35719
