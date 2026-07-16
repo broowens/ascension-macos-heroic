@@ -1,5 +1,26 @@
 # Third-party notices
 
+## Non-affiliation and trademarks
+
+This is an unofficial, independent, third-party community compatibility
+project. It is not affiliated with, endorsed by, sponsored by, authorized by,
+or supported by Project Ascension or any developer, publisher, maintainer,
+licensor, or rights holder associated with the games, launchers, compatibility
+tools, operating systems, or other software with which it interoperates.
+
+All product names, project names, trademarks, service marks, logos, artwork,
+and other intellectual property are the property of their respective owners.
+References to them are descriptive and are used only to identify the software
+with which this project is intended to interoperate. No ownership, endorsement,
+partnership, agency, or other official relationship is claimed or implied.
+
+This project does not grant users any license or other rights to third-party
+software, game content, accounts, services, or intellectual property. Users are
+responsible for obtaining required software lawfully and for complying with all
+applicable third-party licenses, terms of service, and other conditions.
+
+## Included and referenced components
+
 The installer scripts in this repository are licensed under the MIT License.
 
 The optional runner release asset contains third-party components under their

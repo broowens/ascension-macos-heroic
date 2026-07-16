@@ -5,6 +5,17 @@ It bundles the tested compatibility runtime and official Ascension Launcher,
 then keeps the launcher, game, settings, repairs, and uninstall flow in one
 native app. Heroic is not required for the DMG installation.
 
+> [!IMPORTANT]
+> **Unofficial third-party project.** This project is independent and is not
+> affiliated with, endorsed by, sponsored by, authorized by, or supported by
+> Project Ascension or any developer, publisher, maintainer, licensor, or
+> rights holder of the games, launchers, compatibility tools, operating systems,
+> or other software it works with. All product names, trademarks, logos, and
+> other intellectual property belong to their respective owners and are used
+> only to identify compatibility. This project does not grant rights to any
+> third-party software or content. Users are responsible for obtaining required
+> software lawfully and complying with all applicable licenses and terms.
+
 It addresses two startup failures seen with the 32-bit game client and its
 64-bit Memory Bridge helper:
 
@@ -243,6 +254,5 @@ to the same release; see [BUILDING.md](BUILDING.md) and
 
 Other Apple Silicon models should work, but are not yet confirmed.
 
-Project Ascension, Heroic, Microsoft, Apple, Wine, and CodeWeavers are owned by
-their respective authors. This is an independent community compatibility
-project.
+See the [third-party notices](THIRD_PARTY_NOTICES.md) for license, ownership,
+and non-affiliation information.
