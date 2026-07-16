@@ -1,7 +1,9 @@
-# Project Ascension on Apple Silicon with Heroic
+# Project Ascension for Apple Silicon Macs
 
-An automated compatibility package for running Project Ascension through
-Heroic on Apple Silicon Macs.
+A standalone macOS application for running Project Ascension on Apple Silicon.
+It bundles the tested compatibility runtime and official Ascension Launcher,
+then keeps the launcher, game, settings, repairs, and uninstall flow in one
+native app. Heroic is not required for the DMG installation.
 
 It addresses two startup failures seen with the 32-bit game client and its
 64-bit Memory Bridge helper:
@@ -9,11 +11,94 @@ It addresses two startup failures seen with the 32-bit game client and its
 - a black screen caused by a Wine `MSVCP140` lock deadlock;
 - `Failed to initialize memory bridge` caused by an incompatible x64 runtime.
 
-The installer adds the tested WineCX 26/Rosetta x87 runner, installs matching
-x86 and x64 Microsoft VC++ runtime files from Ascension's own cached
-redistributable, and updates only Ascension's Heroic settings.
+The app installs the tested WineCX 26/Rosetta x87 runtime, downloads the
+official x86 and x64 Microsoft VC++ redistributables when required, and lets
+the official Ascension Launcher download and update the game normally.
 
-## One-command install
+## Install the macOS app (recommended)
+
+1. Download `Project-Ascension-for-Mac-v1.0.6.dmg` and its `.sha256` file from
+   the [latest release](https://github.com/broowens/ascension-macos-heroic/releases/latest).
+2. Open the DMG and drag **Project Ascension** to **Applications**.
+3. Open **Project Ascension**. The first launch creates its compatibility
+   environment and opens the official Ascension installer. Complete the normal
+   sign-in and game download from there.
+
+The DMG contains the official launcher installer and compatibility runtime, but
+does not contain the game, account details, or saved credentials. The first
+launch needs an internet connection and may take longer while the runtime and
+Microsoft components are prepared.
+
+### macOS signing warning
+
+Version 1.0.6 is ad-hoc signed but is not yet Apple Developer ID signed or
+notarized. macOS Gatekeeper may therefore block its first launch even when the
+download is intact.
+
+Try the standard macOS override first: Control-click **Project Ascension** in
+Applications, choose **Open**, then choose **Open** again. You can also allow it
+from **System Settings → Privacy & Security → Open Anyway** after one blocked
+launch attempt.
+
+If macOS instead says the app is damaged or cannot be opened, remove the
+download quarantine attribute from this app only, then open it again:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Project Ascension.app"
+```
+
+Only use that command for the DMG downloaded from this repository. To verify
+the download first, run this beside both downloaded files:
+
+```bash
+shasum -a 256 -c Project-Ascension-for-Mac-v1.0.6.dmg.sha256
+```
+
+## App settings
+
+With Project Ascension open, choose **Project Ascension → Settings…** from the
+macOS menu bar. Settings are stored locally and take effect the next time the
+game starts.
+
+### General
+
+- **Close the launcher after the game starts** is the recommended default. The
+  official launcher still handles updates and sign-in, then exits to reduce
+  background overhead while playing.
+- **Keep the launcher visible while playing** leaves its window open.
+- **Show the launcher when the game exits** brings a hidden launcher back after
+  a play session.
+- **Confirm before quitting while the game is running** prevents an accidental
+  menu-bar quit from ending an active session.
+
+### Performance Overlay
+
+The optional overlay displays local DXVK statistics; it does not upload or
+retain performance data.
+
+- **Compact:** FPS and a frame-time graph.
+- **Detailed:** Compact metrics plus estimated GPU load, graphics-memory usage,
+  and shader-compilation activity.
+- **Custom:** choose individual metrics such as draw calls, command submissions,
+  pipelines, graphics API, device information, worker threads, and DXVK version.
+
+Scale and opacity are adjustable. Quick **Off**, **Compact**, and **Detailed**
+choices are also available under **Project Ascension → Performance Overlay**.
+
+### Support
+
+The Support tab can open diagnostic logs, copy non-secret system information,
+run a compatibility check, reinstall the bundled runtime on the next launch,
+or reset the official launcher's preferences, cache, and sign-in session. A
+launcher reset keeps the downloaded game files.
+
+**Uninstall Project Ascension…** offers three levels: remove the app only;
+remove the app and shared compatibility runtime while keeping the downloaded
+game; or remove the app, runtime, and all Project Ascension data.
+
+## Heroic installer (legacy/advanced)
+
+### One-command install
 
 Clone the repository and run the installer with one command:
 
@@ -53,14 +138,14 @@ While the repository is private, clone it with an authenticated GitHub account
 and run `./bootstrap.sh`. Private release downloads use the authenticated `gh`
 command automatically when it is available.
 
-## Requirements
+### Requirements
 
 - An Apple Silicon Mac.
 - An internet connection and enough free space for Heroic and the game.
 - Administrator approval if Homebrew needs to be installed.
 - Heroic, Ascension Launcher, and the game closed before starting or resuming.
 
-## Compatibility-fix-only install
+### Compatibility-fix-only install
 
 If Heroic and Ascension are already installed, the smaller compatibility-only
 installer remains available. Download both files from the latest GitHub release:
@@ -88,7 +173,7 @@ For non-standard locations:
 Open Heroic after installation and press Play, or launch Project Ascension from
 Spotlight.
 
-## Uninstall
+### Uninstall the Heroic installation
 
 From a checkout, run:
 
@@ -108,7 +193,7 @@ Once the repository is public, the uninstaller can also be run directly:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/broowens/ascension-macos-heroic/main/uninstall.sh)"
 ```
 
-## Diagnostics and rollback
+### Diagnostics and rollback
 
 ```bash
 ./diagnose.sh
@@ -122,8 +207,9 @@ lines and login credentials.
 ## What is not included
 
 This repository and its release assets do not contain Ascension game files,
-account details, or Microsoft runtime DLLs. The runtime files are extracted
-locally from the VC++ redistributable cached by Ascension's installer.
+account details, saved credentials, or pre-extracted Microsoft runtime DLLs.
+The standalone app downloads Microsoft's official redistributables when needed;
+the legacy Heroic installer can use the redistributable cached by Ascension.
 
 The custom runner is published as a separate release asset. Its corresponding
 CodeWeavers source archive and the Rosetta x87 loader patch should be attached
@@ -134,6 +220,7 @@ to the same release; see [BUILDING.md](BUILDING.md) and
 
 - Apple M4 Pro
 - macOS 26.5.2
+- Project Ascension for Mac 1.0.6
 - Heroic
 - WineCX 26-derived Wine 11.0 runner with Rosetta x87 loader
 - Microsoft Visual C++ runtime 14.50.35719
