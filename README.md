@@ -28,12 +28,16 @@ the official Ascension Launcher download and update the game normally.
 
 ## Install the macOS app (recommended)
 
-1. Download `Project-Ascension-for-Mac-v1.0.6.dmg` and its `.sha256` file from
+1. Download `Project-Ascension-for-Mac-v1.0.7.dmg` and its `.sha256` file from
    the [latest release](https://github.com/broowens/ascension-macos-heroic/releases/latest).
 2. Open the DMG and drag **Project Ascension** to **Applications**.
 3. Open **Project Ascension**. The first launch creates its compatibility
    environment and opens the official Ascension installer. Complete the normal
    sign-in and game download from there.
+
+The compatibility runtime requires Rosetta 2. On a fresh Mac, the app detects
+whether Rosetta is available and offers to install it using Apple's standard
+administrator approval prompt before setup continues.
 
 The DMG contains the official launcher installer and compatibility runtime, but
 does not contain the game, account details, or saved credentials. The first
@@ -43,7 +47,7 @@ setup stage while those first-launch tasks run.
 
 ### macOS signing warning
 
-Version 1.0.6 is ad-hoc signed but is not yet Apple Developer ID signed or
+Version 1.0.7 is ad-hoc signed but is not yet Apple Developer ID signed or
 notarized. macOS Gatekeeper may therefore block its first launch even when the
 download is intact.
 
@@ -63,7 +67,7 @@ Only use that command for the DMG downloaded from this repository. To verify
 the download first, run this beside both downloaded files:
 
 ```bash
-shasum -a 256 -c Project-Ascension-for-Mac-v1.0.6.dmg.sha256
+shasum -a 256 -c Project-Ascension-for-Mac-v1.0.7.dmg.sha256
 ```
 
 ## App settings

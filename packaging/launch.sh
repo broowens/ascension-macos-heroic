@@ -53,6 +53,35 @@ if [[ $(uname -m) != arm64 ]]; then
     fail "Project Ascension for Mac currently supports Apple Silicon Macs only."
 fi
 
+ensure_rosetta() {
+    if /usr/bin/arch -x86_64 /usr/bin/true >/dev/null 2>&1; then
+        return
+    fi
+
+    printf 'Rosetta 2 is not installed. Requesting installation.\n' >> "$LOG"
+    local result
+    if ! result=$(/usr/bin/osascript <<'APPLESCRIPT' 2>> "$LOG"
+set choice to button returned of (display dialog "Project Ascension uses an Intel-based Wine component that requires Rosetta 2. macOS can download and install Rosetta now." buttons {"Quit", "Install Rosetta 2"} default button "Install Rosetta 2" with title "Rosetta 2 Required" with icon caution)
+if choice is "Quit" then return "quit"
+do shell script "/usr/sbin/softwareupdate --install-rosetta --agree-to-license" with administrator privileges
+return "installed"
+APPLESCRIPT
+    ); then
+        fail "Rosetta 2 could not be installed. Check your internet connection and administrator credentials, then reopen Project Ascension."
+    fi
+
+    if [[ "$result" == "quit" ]]; then
+        printf 'Rosetta 2 installation was declined.\n' >> "$LOG"
+        exit 0
+    fi
+
+    /usr/bin/arch -x86_64 /usr/bin/true >/dev/null 2>&1 || \
+        fail "Rosetta 2 was installed but could not be started. Restart your Mac, then reopen Project Ascension."
+    printf 'Rosetta 2 installation verified.\n' >> "$LOG"
+}
+
+ensure_rosetta
+
 [[ -x "$BUNDLED_RUNNER/bin/wine-heroic" ]] || \
     fail "The bundled compatibility runtime is incomplete. Reinstall Project Ascension from the DMG."
 [[ -f "$INSTALLER" ]] || fail "The bundled Ascension Launcher installer is missing."

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-VERSION="1.0.6"
+VERSION="1.0.7"
 RUNNER_VERSION="1.0.0"
 RUNNER_ARCHIVE=""
 LAUNCHER_INSTALLER=""
@@ -18,7 +18,7 @@ Usage: ./scripts/build-dmg.sh [options]
 Options:
   --runner-archive PATH     Use an existing compatibility runner archive.
   --launcher-installer PATH Use an existing official Ascension setup executable.
-  --version VERSION         Package version (default: 1.0.6).
+  --version VERSION         Package version (default: 1.0.7).
   --help                    Show this help.
 EOF
 }
