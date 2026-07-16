@@ -60,7 +60,15 @@ With Project Ascension open, choose **Project Ascension → Settings…** from t
 macOS menu bar. Settings are stored locally and take effect the next time the
 game starts.
 
+<p align="center">
+  <img src="docs/images/app-menu.png" alt="Project Ascension macOS application menu" width="520">
+</p>
+
 ### General
+
+<p align="center">
+  <img src="docs/images/settings-general.png" alt="Project Ascension General settings" width="760">
+</p>
 
 - **Close the launcher after the game starts** is the recommended default. The
   official launcher still handles updates and sign-in, then exits to reduce
@@ -72,6 +80,10 @@ game starts.
   menu-bar quit from ending an active session.
 
 ### Performance Overlay
+
+<p align="center">
+  <img src="docs/images/settings-performance-overlay.png" alt="Project Ascension Performance Overlay settings" width="760">
+</p>
 
 The optional overlay displays local DXVK statistics; it does not upload or
 retain performance data.
@@ -86,6 +98,10 @@ Scale and opacity are adjustable. Quick **Off**, **Compact**, and **Detailed**
 choices are also available under **Project Ascension → Performance Overlay**.
 
 ### Support
+
+<p align="center">
+  <img src="docs/images/settings-support.png" alt="Project Ascension Support and Maintenance settings" width="760">
+</p>
 
 The Support tab can open diagnostic logs, copy non-secret system information,
 run a compatibility check, reinstall the bundled runtime on the next launch,
