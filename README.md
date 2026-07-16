@@ -1,9 +1,10 @@
 # Project Ascension for Apple Silicon Macs
 
 A standalone macOS application for running Project Ascension on Apple Silicon.
-It bundles the tested compatibility runtime and official Ascension Launcher,
-then keeps the launcher, game, settings, repairs, and uninstall flow in one
-native app. Heroic is not required for the DMG installation.
+It bundles the tested compatibility runtime, downloads the official Ascension
+Launcher directly from Ascension on first launch, then keeps the launcher, game,
+settings, repairs, and uninstall flow in one native app. Heroic is not required
+for the DMG installation.
 
 > [!IMPORTANT]
 > **Unofficial third-party project.** This project is independent and is not
@@ -39,11 +40,12 @@ The compatibility runtime requires Rosetta 2. On a fresh Mac, the app detects
 whether Rosetta is available and offers to install it using Apple's standard
 administrator approval prompt before setup continues.
 
-The DMG contains the official launcher installer and compatibility runtime, but
-does not contain the game, account details, or saved credentials. The first
-launch needs an internet connection and may take longer while the runtime and
-Microsoft components are prepared. A native progress window shows the current
-setup stage while those first-launch tasks run.
+The DMG contains the compatibility runtime, but does not contain the Ascension
+launcher installer, game, account details, or saved credentials. On first launch
+the app downloads the current launcher installer directly from Ascension. The
+first launch needs an internet connection and may take longer while the runtime
+and Microsoft components are prepared. A native progress window shows the
+current setup stage while those first-launch tasks run.
 
 ### macOS signing warning
 
@@ -238,15 +240,18 @@ lines and login credentials.
 
 ## What is not included
 
-This repository and its release assets do not contain Ascension game files,
-account details, saved credentials, or pre-extracted Microsoft runtime DLLs.
-The standalone app downloads Microsoft's official redistributables when needed;
-the legacy Heroic installer can use the redistributable cached by Ascension.
+This repository and its release assets do not contain the Ascension launcher
+installer, Ascension game files, account details, saved credentials, or
+pre-extracted Microsoft runtime DLLs. The standalone app downloads the launcher
+from Ascension and Microsoft's official redistributables when needed; the legacy
+Heroic installer can use the redistributable cached by Ascension.
 
 The custom runner is published as a separate release asset. Its corresponding
 CodeWeavers source archive and the Rosetta x87 loader patch should be attached
 to the same release; see [BUILDING.md](BUILDING.md) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The audited runtime contents
+and automated proprietary-component guard are documented in
+[OPEN_SOURCE_AUDIT.md](OPEN_SOURCE_AUDIT.md).
 
 ## Tested configuration
 

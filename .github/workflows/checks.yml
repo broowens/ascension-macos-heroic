@@ -10,11 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check shell syntax
-        run: bash -n bootstrap.sh install.sh uninstall.sh rollback.sh diagnose.sh scripts/build-release.sh
+        run: bash -n bootstrap.sh install.sh uninstall.sh rollback.sh diagnose.sh scripts/audit-runner.sh scripts/build-release.sh scripts/build-dmg.sh packaging/launch.sh
       - name: Check Python syntax
         run: python3 -m py_compile scripts/*.py
       - name: Ensure no forbidden binaries are tracked
         run: |
-          if find . -type f \( -iname 'Ascension.exe' -o -iname 'MMgr64.exe' -o -iname 'DivxDecoderOriginal.dll' \) | grep -q .; then
+          if git ls-files | grep -Ei '(^|/)(ascension-setup[.]exe|Ascension[.]exe|MMgr64[.]exe|DivxDecoderOriginal[.]dll)$'; then
             exit 1
           fi

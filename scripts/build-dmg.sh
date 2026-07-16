@@ -1,15 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-VERSION="1.0.7"
+VERSION="1.0.8"
 RUNNER_VERSION="1.0.0"
 RUNNER_ARCHIVE=""
-LAUNCHER_INSTALLER=""
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 DIST="$ROOT/dist"
 RUNNER_NAME="WineCX26-RosettaX87-Mingw"
 RUNNER_SHA256="da832e55fe008b4b317e70c9de8ea48d8a4e0d8cfb16ffa94bb6aaddb8152366"
-LAUNCHER_URL="https://api.ascension.gg/api/v3/content/launcher/latest"
+ICON_SOURCE="$ROOT/assets/app-icon.png"
 
 usage() {
     cat <<'EOF'
@@ -17,8 +16,7 @@ Usage: ./scripts/build-dmg.sh [options]
 
 Options:
   --runner-archive PATH     Use an existing compatibility runner archive.
-  --launcher-installer PATH Use an existing official Ascension setup executable.
-  --version VERSION         Package version (default: 1.0.7).
+  --version VERSION         Package version (default: 1.0.8).
   --help                    Show this help.
 EOF
 }
@@ -28,7 +26,6 @@ die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --runner-archive) RUNNER_ARCHIVE=$2; shift 2 ;;
-        --launcher-installer) LAUNCHER_INSTALLER=$2; shift 2 ;;
         --version) VERSION=$2; shift 2 ;;
         --help|-h) usage; exit 0 ;;
         *) die "Unknown option: $1" ;;
@@ -57,14 +54,7 @@ if [[ -z "$RUNNER_ARCHIVE" ]]; then
     [[ "$actual" == "$RUNNER_SHA256" ]] || die "Compatibility runtime checksum mismatch."
 fi
 [[ -f "$RUNNER_ARCHIVE" ]] || die "Runner archive not found: $RUNNER_ARCHIVE"
-
-if [[ -z "$LAUNCHER_INSTALLER" ]]; then
-    LAUNCHER_INSTALLER="$CACHE/ascension-setup.exe"
-    printf 'Downloading the official Ascension Launcher installer...\n'
-    curl -fL --retry 3 --progress-bar "$LAUNCHER_URL" -o "$LAUNCHER_INSTALLER.part"
-    mv "$LAUNCHER_INSTALLER.part" "$LAUNCHER_INSTALLER"
-fi
-[[ -s "$LAUNCHER_INSTALLER" ]] || die "Launcher installer not found: $LAUNCHER_INSTALLER"
+[[ -s "$ICON_SOURCE" ]] || die "Custom app icon source not found: $ICON_SOURCE"
 
 STAGE=$(mktemp -d "${TMPDIR:-/tmp}/ascension-dmg.XXXXXX")
 trap 'rm -rf "$STAGE"' EXIT
@@ -76,7 +66,6 @@ mkdir -p "$CONTENTS/MacOS" "$RESOURCES"
 printf 'Assembling Project Ascension.app...\n'
 cp -p "$ROOT/packaging/launch.sh" "$CONTENTS/MacOS/Project Ascension"
 chmod +x "$CONTENTS/MacOS/Project Ascension"
-cp -p "$LAUNCHER_INSTALLER" "$RESOURCES/ascension-setup.exe"
 cp -p "$ROOT/LICENSE" "$RESOURCES/LICENSE"
 cp -p "$ROOT/THIRD_PARTY_NOTICES.md" "$RESOURCES/THIRD_PARTY_NOTICES.md"
 /usr/bin/ditto "$ROOT/packaging/runtime-patch" "$RESOURCES/runtime-patch"
@@ -132,6 +121,7 @@ WINDOW_CC=$(command -v x86_64-w64-mingw32-gcc)
 
 /usr/bin/tar -xf "$RUNNER_ARCHIVE" -C "$RESOURCES"
 [[ -x "$RESOURCES/$RUNNER_NAME/bin/wine-heroic" ]] || die "Runner archive has an unexpected layout."
+"$ROOT/scripts/audit-runner.sh" "$RESOURCES/$RUNNER_NAME"
 
 # The sanitized release replaces its original compiled install path with a
 # same-length placeholder. Retarget every embedded Wine path to a short,
@@ -342,23 +332,21 @@ loader_text = loader_text.replace(
 loader.write_text(loader_text)
 PY
 
-# Reuse the official launcher's own artwork for the macOS app icon.
-ICON_STAGE="$STAGE/icon-source"
+# Build the macOS icon from this project's original artwork. No Ascension
+# launcher artwork or other third-party visual asset is included.
 ICONSET="$STAGE/ProjectAscension.iconset"
-mkdir -p "$ICON_STAGE" "$ICONSET"
-if /usr/bin/tar -xf "$LAUNCHER_INSTALLER" -C "$ICON_STAGE" resources/app-icon.ico 2>/dev/null; then
-    for spec in '16 icon_16x16.png' '32 icon_16x16@2x.png' \
-        '32 icon_32x32.png' '64 icon_32x32@2x.png' \
-        '128 icon_128x128.png' '256 icon_128x128@2x.png' \
-        '256 icon_256x256.png' '512 icon_256x256@2x.png' \
-        '512 icon_512x512.png' '1024 icon_512x512@2x.png'; do
-        size=${spec%% *}
-        name=${spec#* }
-        sips -s format png -z "$size" "$size" "$ICON_STAGE/resources/app-icon.ico" \
-            --out "$ICONSET/$name" >/dev/null
-    done
-    iconutil -c icns "$ICONSET" -o "$RESOURCES/ProjectAscension.icns"
-fi
+mkdir -p "$ICONSET"
+for spec in '16 icon_16x16.png' '32 icon_16x16@2x.png' \
+    '32 icon_32x32.png' '64 icon_32x32@2x.png' \
+    '128 icon_128x128.png' '256 icon_128x128@2x.png' \
+    '256 icon_256x256.png' '512 icon_256x256@2x.png' \
+    '512 icon_512x512.png' '1024 icon_512x512@2x.png'; do
+    size=${spec%% *}
+    name=${spec#* }
+    sips -s format png -z "$size" "$size" "$ICON_SOURCE" \
+        --out "$ICONSET/$name" >/dev/null
+done
+iconutil -c icns "$ICONSET" -o "$RESOURCES/ProjectAscension.icns"
 
 cat > "$CONTENTS/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -384,7 +372,8 @@ EOF
 
 cat > "$RESOURCES/PACKAGE-MANIFEST.txt" <<EOF
 Project Ascension for Mac $VERSION
-Official launcher installer SHA-256: $(shasum -a 256 "$LAUNCHER_INSTALLER" | awk '{print $1}')
+Official launcher installer included: no
+Official launcher installer delivery: downloaded by the user from Ascension on first launch
 Compatibility runtime SHA-256: $(shasum -a 256 "$RUNNER_ARCHIVE" | awk '{print $1}')
 Game data included: no
 Window close-control compatibility helper: included

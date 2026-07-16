@@ -6,17 +6,18 @@ RESOURCES="$APP_ROOT/Resources"
 BUNDLED_RUNNER="$RESOURCES/WineCX26-RosettaX87-Mingw"
 RUNNER="/Users/Shared/PAWine"
 RUNTIME_MARKER="2026-07-16-prefix-modules1"
+LAUNCHER_INSTALLER_URL="https://api.ascension.gg/api/v3/content/launcher/latest"
 WINE="$RUNNER/bin/wine-heroic"
 WINESERVER="$RUNNER/bin/wineserver"
 ROSETTA_LOADER="$RUNNER/support/ascension-runtime/rosettax87"
-INSTALLER="$RESOURCES/ascension-setup.exe"
+SUPPORT="$HOME/Library/Application Support/Project Ascension"
+INSTALLER="$SUPPORT/downloads/ascension-setup.exe"
 PATCH_ASSETS="$RESOURCES/runtime-patch"
 WINDOW_CONTROLS="$RESOURCES/ascension-window-controls.exe"
 WINDOW_HOOK="$RESOURCES/ascension-window-hook.dll"
 SETTINGS_HELPER="$RESOURCES/ascension-settings"
 PROGRESS_HELPER="$RESOURCES/ascension-progress"
 MENU_LIBRARY="$RESOURCES/libascension-menu.dylib"
-SUPPORT="$HOME/Library/Application Support/Project Ascension"
 PREFIX="$SUPPORT/prefix"
 LAUNCHER_DIR="$PREFIX/drive_c/Program Files/Ascension Launcher"
 LAUNCHER="$LAUNCHER_DIR/Ascension Launcher.exe"
@@ -84,7 +85,6 @@ ensure_rosetta
 
 [[ -x "$BUNDLED_RUNNER/bin/wine-heroic" ]] || \
     fail "The bundled compatibility runtime is incomplete. Reinstall Project Ascension from the DMG."
-[[ -f "$INSTALLER" ]] || fail "The bundled Ascension Launcher installer is missing."
 [[ -f "$PATCH_ASSETS/libDllLdr.dll" && -f "$PATCH_ASSETS/d3d9.dll" ]] || \
     fail "The bundled macOS game compatibility files are missing. Reinstall Project Ascension from the DMG."
 [[ -f "$WINDOW_CONTROLS" && -f "$WINDOW_HOOK" ]] || \
@@ -491,6 +491,36 @@ reset_launcher_data_if_requested() {
     rm -f "$SUPPORT/.reset-launcher-data"
 }
 
+download_launcher_installer() {
+    local part="$INSTALLER.part"
+    local magic
+    if [[ -s "$INSTALLER" ]]; then
+        magic=$(/usr/bin/od -An -tx1 -N2 "$INSTALLER" | /usr/bin/tr -d '[:space:]')
+        [[ "$magic" == 4d5a ]] && return
+        rm -f "$INSTALLER"
+    fi
+
+    mkdir -p "$(dirname "$INSTALLER")"
+    rm -f "$part"
+    printf 'Downloading the official Ascension Launcher installer from Ascension.\n'
+    /usr/bin/curl --fail --location --retry 3 --show-error \
+        --proto '=https' --proto-redir '=https' \
+        "$LAUNCHER_INSTALLER_URL" --output "$part" || {
+        rm -f "$part"
+        fail "The official Ascension Launcher installer could not be downloaded. Check your internet connection and try again."
+    }
+
+    magic=$(/usr/bin/od -An -tx1 -N2 "$part" | /usr/bin/tr -d '[:space:]')
+    if [[ "$magic" != 4d5a ]]; then
+        rm -f "$part"
+        fail "Ascension's download did not return a valid Windows installer. Try again later."
+    fi
+
+    mv "$part" "$INSTALLER"
+    printf 'Official launcher installer SHA-256: %s\n' \
+        "$(shasum -a 256 "$INSTALLER" | awk '{print $1}')"
+}
+
 install_vc_runtime() {
     local system32="$PREFIX/drive_c/windows/system32/msvcp140.dll"
     local syswow64="$PREFIX/drive_c/windows/syswow64/msvcp140.dll"
@@ -545,10 +575,13 @@ install_vc_runtime() {
     configure_launcher
 
     if [[ ! -f "$LAUNCHER" ]]; then
+        progress_update 46 "Downloading the official Ascension Launcher…"
+        download_launcher_installer
         progress_update 50 "Complete the official Ascension Launcher setup window."
-        printf 'Opening the bundled official launcher installer.\n'
+        printf 'Opening the official launcher installer downloaded from Ascension.\n'
         installer_env "$WINE" "$INSTALLER"
         [[ -f "$LAUNCHER" ]] || fail "The Ascension Launcher was not installed. Open Project Ascension again to retry."
+        rm -f "$INSTALLER"
         # The NSIS installer can auto-start the launcher without our required
         # Electron flags. That hidden first instance then absorbs the supported
         # launch below through Electron's single-instance lock. Stop it after

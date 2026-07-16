@@ -34,29 +34,30 @@ To package an already-built and tested runner:
 
 The command creates sanitized archives and checksums in `dist/`. It strips
 debug data, removes machine-specific build paths, excludes backups, and fails
-if known Ascension binary names are present.
+if known Ascension binary names are present. It also audits the runner layout
+and corresponding source archive, rejecting proprietary CrossOver application,
+licensing, installer, or account-management artifacts.
 
 ## Building the launcher-only DMG
 
-The standalone DMG bundles the compatibility runtime and the official
-Ascension Launcher installer, but no game data. On first launch, the app creates
-a writable Wine prefix in `~/Library/Application Support/Project Ascension` and
-opens the bundled official installer. It also downloads the required x86 and
-x64 Visual C++ redistributables directly from Microsoft. The Ascension Launcher
-then downloads the game normally.
+The standalone DMG bundles the compatibility runtime, but no Ascension launcher
+installer or game data. On first launch, the app creates a writable Wine prefix
+in `~/Library/Application Support/Project Ascension`, downloads the current
+launcher installer directly from Ascension's official endpoint, and opens that
+user-downloaded installer. It also downloads the required x86 and x64 Visual C++
+redistributables directly from Microsoft. The Ascension Launcher then downloads
+the game normally.
 
 ```bash
 ./scripts/build-dmg.sh
 ```
 
-The build downloads and verifies the v1.0.0 compatibility runner and downloads
-the current official launcher installer directly from Ascension. Existing
-downloads can be supplied for an offline rebuild:
+The build downloads and verifies the v1.0.0 compatibility runner. An existing
+runtime archive can be supplied for an offline rebuild:
 
 ```bash
 ./scripts/build-dmg.sh \
-  --runner-archive /path/to/ascension-winecx26-rosettax87-mingw-v1.0.0.tar.xz \
-  --launcher-installer /path/to/ascension-setup.exe
+  --runner-archive /path/to/ascension-winecx26-rosettax87-mingw-v1.0.0.tar.xz
 ```
 
 The resulting DMG and SHA-256 file are written to `dist/`. The app is ad-hoc

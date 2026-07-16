@@ -44,6 +44,7 @@ cp -p "$RUNNER/support/ascension-runtime/libRuntimeRosettax87" "$TARGET/support/
 if find "$TARGET" -type f \( -iname 'Ascension.exe' -o -iname 'MMgr64.exe' -o -iname 'DivxDecoderOriginal.dll' -o -iname 'Extensions.dll' \) | grep -q .; then
     die "A Project Ascension binary entered the release stage."
 fi
+"$ROOT/scripts/audit-runner.sh" "$TARGET" "$SOURCE_ARCHIVE"
 
 # Strip debug tables to reduce the release and remove local build paths.
 for directory in i386-windows x86_64-windows; do

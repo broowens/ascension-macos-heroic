@@ -35,8 +35,11 @@ It also excludes Microsoft Visual C++ runtime DLLs. Those runtime files are
 installed on the user's Mac from Microsoft's official x86 and x64
 redistributable downloads when required.
 
-Rosetta and Apple technologies remain subject to Apple's terms. Project
-Ascension assets remain subject to Project Ascension's terms.
+Rosetta and Apple technologies remain subject to Apple's terms. The standalone
+DMG does not include the Ascension launcher installer, game client, or Ascension
+artwork. The launcher is downloaded by the user from Ascension's official
+endpoint on first launch. Project Ascension software and services remain subject
+to Project Ascension's terms.
 
 The macOS game compatibility payload is derived from WoWSilicon 2.5.5 and is
 distributed under GNU GPL version 3. Its corresponding source is available at
